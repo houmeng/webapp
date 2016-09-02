@@ -199,6 +199,14 @@ class Model(dict, metaclass=ModelMetaclass):
             return None
         return cls(**rs[0])
 
+    @classmethod
+    @asyncio.coroutine
+    def findall(cls):
+        rs = yield from select(cls.__select__, None)
+        if len(rs) == 0:
+            return None
+        return [cls(**u) for u in rs]
+
 #    @classmethod
     @asyncio.coroutine
     def save(self):

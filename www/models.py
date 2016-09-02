@@ -7,7 +7,7 @@ Models for user, blog, comment.
 
 __author__ = "meng hou"
 
-from orm import Model, StringField, IntegerField, BooleanField, FloatField
+from orm import Model, StringField, IntegerField, BooleanField, FloatField, TextField
 import orm, asyncio
 import sys, time, uuid
 
