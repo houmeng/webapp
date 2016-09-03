@@ -63,7 +63,7 @@ def init(loop):
     yield from orm.create_db_pool(loop=loop, host=server_addr, port=sql_port,
                                user="root", password="root", db="webapp")
     app = web.Application(loop=loop, middlewares=[
-        logger_factory, response_factory
+        logger_factory, auth_factory, response_factory
     ])
 
     init_jinja2(app, filters=dict(datetime=datetime_filter))

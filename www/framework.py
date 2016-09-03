@@ -9,7 +9,7 @@ __author__ = "Meng Hou"
 
 import functools
 import asyncio, inspect, logging
-from app import *
+#from app import *
 
 def get(path):
     '''
@@ -35,6 +35,8 @@ def post(path):
         wrapper.__method__ = "POST"
         wrapper.route__ = path
         return wrapper
+    return decorator
+
 @get("/blog/{id}")
 def get_blog(id):
     pass

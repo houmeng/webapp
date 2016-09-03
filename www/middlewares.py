@@ -7,8 +7,9 @@ Define middleware functions.
 
 __author__ = "Meng Hou"
 
-import asyncio,logging
+import asyncio,logging, json
 from aiohttp import web
+from handlers import COOKIE_NAME, cookie2user
 
 @asyncio.coroutine
 def logger_factory(app, handler):
@@ -17,6 +18,48 @@ def logger_factory(app, handler):
         logging.info("Request: %s %s" % (request.method, request.path))
         return (yield from handler(request))
     return logger
+
+@asyncio.coroutine
+def cookie2user0(cookie_str):
+    """
+    Parse cookie and load user if cookie is valid.
+    """
+    if not cookie_str:
+        return None
+    try:
+        L = cookie_str.split("-")
+        if len(L) != 3:
+            return None
+        uid, expires, sha1 = L
+        if int(expires) < time.time():
+            return None
+        user = yield from User.find(uid)
+        if user is None:
+            return None
+        s = "%s-%s-%s-%s" % (uid, user.passwd, expires, _COOKIE_KEY)
+        if sha1 != hashlib.sha1(s.encode("utf-8")).hexgiest():
+            logging.info("invalid sha1")
+            return None
+        user.passwd = "******"
+        return user
+    except Exception as e:
+        logging.exception(e)
+        return None
+
+@asyncio.coroutine
+def auth_factory(app, handler):
+    @asyncio.coroutine
+    def auth(request):
+        logging.info("check user: %s %s" % (request.method, request.path))
+        request.__user__ = None
+        cookie_str = request.cookies.get(COOKIE_NAME)
+        if cookie_str:
+            user = yield from cookie2user(cookie_str)
+            if user:
+                logging.info("set current user: %s" % user.email)
+                request.__user__ = user
+        return (yield from handler(request))
+    return auth
 
 @asyncio.coroutine
 def response_factory(app, handler):
@@ -39,7 +82,7 @@ def response_factory(app, handler):
         if isinstance(r, dict):
             template = r.get("__template__")
             if template is None:
-                resp = web.Response(body=join.dumps(r, ensure_ascii=False, default=lambda o: o.__dict__).encode("utf-8"))
+                resp = web.Response(body=json.dumps(r, ensure_ascii=False, default=lambda o: o.__dict__).encode("utf-8"))
                 resp.content_type = "application/json;charset=utf-8"
                 return resp
             else:

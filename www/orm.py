@@ -30,7 +30,7 @@ def create_db_pool(loop, **kw):
         logging.info("conn: %s" % __db_pool.get())
 
 @asyncio.coroutine
-def select(sql, args, size=None):
+def select(sql, args=None, size=None):
     log(sql, args)
     global __db_pool
     with (yield from __db_pool) as conn:
@@ -201,8 +201,10 @@ class Model(dict, metaclass=ModelMetaclass):
 
     @classmethod
     @asyncio.coroutine
-    def findall(cls):
-        rs = yield from select(cls.__select__, None)
+    def findall(cls, **kw):
+        args = dict()
+        args = kw
+        rs = yield from select(cls.__select__, args)
         if len(rs) == 0:
             return None
         return [cls(**u) for u in rs]
