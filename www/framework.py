@@ -7,7 +7,7 @@ web framework.
 
 __author__ = "Meng Hou"
 
-import functools
+import functools, os
 import asyncio, inspect, logging
 #from app import *
 
@@ -33,7 +33,7 @@ def post(path):
         def wrapper(*args, **kw):
             return func(*args, **kw)
         wrapper.__method__ = "POST"
-        wrapper.route__ = path
+        wrapper.__route__ = path
         return wrapper
     return decorator
 
@@ -102,8 +102,10 @@ class RequestHandler(object):
     @asyncio.coroutine
     def __call__(self, request):
         kw = None
+        logging.info("0POST request:%s" % request)
         if self._has_var_kw_arg or self._has_named_kw_args or self._required_kw_args:
             if request.method == "POST":
+                logging.info("POST request:%s" % request)
                 if not request.content_type:
                     return web.HTTPBadRequest("Missing Content-Type.")
                 ct = request.content_type.lower()
@@ -146,13 +148,19 @@ class RequestHandler(object):
             for name in self._required_kw_args:
                 if not name in kw:
                     return web.HTTPBadRequest("Missing argument: %s" % name)
-        logging.info("call with args: %s" % str(kw))
+        logging.info("HTTP request handler:call with args: %s" % str(kw))
 
         try:
             r = yield from self._func(**kw)
             return r
         except APIError as e:
             return dict(error=e.error, data=e.data, message=e.message)
+
+# for static files(*.js, *.css) request
+def add_static(app):
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
+    app.router.add_static("/static/", path)
+    logging.info("add static %s => %s" % ("/static/", path))
 
 def add_route(app, fn):
     method = getattr(fn, "__method__", None)

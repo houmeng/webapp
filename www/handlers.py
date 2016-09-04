@@ -8,7 +8,7 @@ url handlers.
 __author__ = "Meng Hou"
 
 from framework import get,post
-import asyncio, re
+import asyncio, re, time, logging
 from models import User,Blog
 from config import configs
 
@@ -40,6 +40,7 @@ _COOKIE_KEY = configs.session.secret
 
 @post("/api/users")
 def api_register_user(*, email, name, passwd):
+    logging.info("register info:%s, %s" % (name, email))
     if not name or not name.strip():
         raise APIValueError("name")
     if not email or not _RE_EMAIL.match(email):

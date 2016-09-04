@@ -67,6 +67,7 @@ def init(loop):
     ])
 
     init_jinja2(app, filters=dict(datetime=datetime_filter))
+    add_static(app)
     add_routes(app, "handlers")
 #    app.router.add_route("GET", "/a/", index0)
     srv = yield from loop.create_server(app.make_handler(), server_addr, server_port)
