@@ -6,6 +6,7 @@ import logging; logging.basicConfig(level=logging.INFO)
 
 import asyncio, os, time, json, jinja2
 import orm
+from models import create_admin
 
 from jinja2 import Environment, FileSystemLoader
 from framework import *
@@ -57,10 +58,12 @@ def datetime_filter(t):
 
 @asyncio.coroutine
 def init(loop):
-    server_addr = "127.0.0.1"
+    server_addr = "0.0.0.0"
+#    server_addr = "127.0.0.1"
     server_port = 9000
+    sql_addr = "127.0.0.1"
     sql_port = 3306
-    yield from orm.create_db_pool(loop=loop, host=server_addr, port=sql_port,
+    yield from orm.create_db_pool(loop=loop, host=sql_addr, port=sql_port,
                                user="root", password="root", db="webapp")
     app = web.Application(loop=loop, middlewares=[
         logger_factory, auth_factory, response_factory
@@ -69,7 +72,7 @@ def init(loop):
     init_jinja2(app, filters=dict(datetime=datetime_filter))
     add_static(app)
     add_routes(app, "handlers")
-#    app.router.add_route("GET", "/a/", index0)
+    yield from create_admin()
     srv = yield from loop.create_server(app.make_handler(), server_addr, server_port)
     logging.info("server started at http://%s:%d..." % (server_addr, server_port))
     return srv

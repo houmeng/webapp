@@ -9,7 +9,8 @@ __author__ = "Meng Hou"
 
 import functools, os
 import asyncio, inspect, logging
-#from app import *
+from apis import APIError
+from urllib import parse
 
 def get(path):
     '''
@@ -36,14 +37,6 @@ def post(path):
         wrapper.__route__ = path
         return wrapper
     return decorator
-
-@get("/blog/{id}")
-def get_blog(id):
-    pass
-
-@get("/api/comments")
-def api_comments(*, page="1"):
-    pass
 
 def get_required_kw_args(fn):
     args = []
@@ -81,7 +74,7 @@ def has_request_arg(fn):
         if name == "request":
             found = True
             continue
-        if found and (param.kind != inspect.Parameter.VAR_POSITION and param.kind != inspect.Parameter.KEYWORD_ONLY and param.kind != inspect.Parameter.VAR_KEYWORD):
+        if found and (param.kind != inspect.Parameter.VAR_POSITIONAL and param.kind != inspect.Parameter.KEYWORD_ONLY and param.kind != inspect.Parameter.VAR_KEYWORD):
             raise ValueError("request parameter must be the last named parameter in function: %s%s" % (fn.__name__, str(sig)))
     return found
 
@@ -102,7 +95,6 @@ class RequestHandler(object):
     @asyncio.coroutine
     def __call__(self, request):
         kw = None
-        logging.info("0POST request:%s" % request)
         if self._has_var_kw_arg or self._has_named_kw_args or self._required_kw_args:
             if request.method == "POST":
                 logging.info("POST request:%s" % request)

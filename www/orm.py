@@ -30,7 +30,7 @@ def create_db_pool(loop, **kw):
         logging.info("conn: %s" % __db_pool.get())
 
 @asyncio.coroutine
-def select(sql, args=None, size=None):
+def select(sql, args, size=None):
     log(sql, args)
     global __db_pool
     with (yield from __db_pool) as conn:
@@ -119,9 +119,9 @@ class ModelMetaclass(type):
         fields = []
         primary_key = None
         for k, v in attrs.items():
-            logging.info("attrs : %s, %s" % (k, v))
+#            logging.info("attrs : %s, %s" % (k, v))
             if isinstance(v, Field):
-                logging.info("  found mapping: %s ==> %s" % (k, v))
+#                logging.info("  found mapping: %s ==> %s" % (k, v))
                 mappings[k] = v
                 if v.primary_key:
                     # 找到主键
@@ -158,9 +158,6 @@ class Model(dict, metaclass=ModelMetaclass):
 
     #子类未实现__init__时,调用基类的__init__
     def __init__(self, **kw):
-        print("%s init." % self.__class__.__name__)
-        for k, v in kw.items():
-            print(" %s : %s" % (k, v))
 
         #调用Model的基类进行构造
         super(Model, self).__init__(**kw)
@@ -201,15 +198,44 @@ class Model(dict, metaclass=ModelMetaclass):
 
     @classmethod
     @asyncio.coroutine
-    def findall(cls, **kw):
-        args = dict()
-        args = kw
-        rs = yield from select(cls.__select__, args)
-        if len(rs) == 0:
-            return None
+    def findall(cls, where=None, args=None, **kw):
+        sql = [cls.__select__]
+        if where:
+            sql.append("where")
+            sql.append(where)
+        if args is None:
+            args = []
+        orderBy = kw.get("orderBy", None)
+        if orderBy:
+            sql.append("order by")
+            sql.append(orderBy)
+        limit = kw.get("limit", None)
+        if limit is not None:
+            sql.append("limit")
+            if isinstance(limit, int):
+                sql.append("?")
+                args.append(limit)
+            if isinstance(limit, tuple) and len(limit) == 2:
+                sql.append("?, ?")
+                args.extend(limit)
+            else:
+                raise ValueError("Invalid limit value: %s" % str(limit))
+
+        rs = yield from select(" ".join(sql), args)
         return [cls(**u) for u in rs]
 
-#    @classmethod
+    @classmethod
+    @asyncio.coroutine
+    def findNumber(cls, selectField, where=None, args=None):
+        sql = ["select %s _num_ from `%s`" % (selectField, cls.__table__)]
+        if where:
+            sql.append("where")
+            sql.append(where)
+        rs = yield from select(" ".join(sql), args, 1)
+        if len(rs) == 0:
+            return None
+        return rs[0]["_num_"]
+
     @asyncio.coroutine
     def save(self):
         args = list(map(self.getValueOrDefault, self.__fields__))
@@ -218,3 +244,18 @@ class Model(dict, metaclass=ModelMetaclass):
         rows = yield from execute(self.__insert__, args)
         if rows != 1:
             logging.warn("failed to insert record: affected rows: %s" % rows)
+
+    @asyncio.coroutine
+    def update(self):
+        args = list(map(self.getValue, self.__fields__))
+        args.append(self.getValue(self.__primary_key__))
+        rows = yield from execute(self.__update__, args)
+        if rows != 1:
+            logging.warn("failed to update by primary key: affected rows: %s" % rows)
+
+    @asyncio.coroutine
+    def remove(self):
+        args = [self.getValue(self.__primary_key__)]
+        rows = yield from execute(self.__delete__, args)
+        if rows != 1:
+            logging.warn("failed to remove by primary key: affected rows: %s" % rows)

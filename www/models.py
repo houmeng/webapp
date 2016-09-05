@@ -8,7 +8,7 @@ Models for user, blog, comment.
 __author__ = "meng hou"
 
 from orm import Model, StringField, IntegerField, BooleanField, FloatField, TextField
-import orm, asyncio
+import orm, asyncio, hashlib
 import sys, time, uuid
 
 def next_id():
@@ -47,6 +47,16 @@ class Comment(Model):
     user_image = StringField(ddl="varchar(500)")
     content = TextField()
     created_at = FloatField(default=time.time)
+
+def create_admin(name="admin", passwd="123456", email="admin@163.com"):
+    admin = yield from User.findall("admin=?", [1])
+    if len(admin) > 0:
+        return
+    uid = next_id()
+    crypto_passwd = hashlib.sha1(("%s:%s" % (email, passwd)).encode("utf-8")).hexdigest()
+    sha1_passwd = "%s:%s" % (uid, crypto_passwd)
+    user = User(id=uid, name=name.strip(), email=email, passwd=hashlib.sha1(sha1_passwd.encode("utf-8")).hexdigest(), image="http://www.gravatar.com/avatar/%s?d=mm&s=120" % hashlib.md5(email.encode("utf-8")).hexdigest(), admin=True)
+    yield from user.save()
 
 @asyncio.coroutine
 def test(loop):

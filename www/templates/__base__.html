@@ -1,4 +1,21 @@
 <!DOCTYPE html>
+<!--
+{% macro pagination(url, page) %}
+    <ul class="uk-pagination">
+        {% if page.has_previous %}
+            <li><a href="{{ url }}{{ page.page_index - 1 }}"><i class="uk-icon-angle-double-left"></i></a></li>
+        {% else %}
+            <li class="uk-disabled"><span><i class="uk-icon-angle-double-left"></i></span></li>
+        {% endif %}
+            <li class="uk-active"><span>{{ page.page_index }}</span></li>
+        {% if page.has_next %}
+            <li><a href="{{ url }}{{ page.page_index + 1 }}"><i class="uk-icon-angle-double-right"></i></a></li>
+        {% else %}
+            <li class="uk-disabled"><span><i class="uk-icon-angle-double-right"></i></span></li>
+        {% endif %}
+    </ul>
+{% endmacro %}
+-->
 <html>
 <head>
   <meta charset="utf-8" />
@@ -18,7 +35,7 @@
 <body>
   <nav class="uk-navbar uk-navbar-attached uk-margin-bottom">
         <div class="uk-container uk-container-center">
-            <a href="/" class="uk-navbar-brand">Awesome</a>
+            <a href="/" class="uk-navbar-brand">Home</a>
             <ul class="uk-navbar-nav">
                 <li data-url="blogs"><a href="/"><i class="uk-icon-home"></i> Blog</a></li>
                 <li><a target="_blank" href="#"><i class="uk-icon-book"></i> Learn</a></li>
@@ -26,9 +43,9 @@
             </ul>
             <div class="uk-navbar-flip">
                 <ul class="uk-navbar-nav">
-                {% if user %}
+                {% if __user__ %}
                     <li class="uk-parent" data-uk-dropdown>
-                        <a href="#0"><i class="uk-icon-user"></i> {{ user.name }}</a>
+                        <a href="#0"><i class="uk-icon-user"></i> {{ __user__.name }}</a>
                         <div class="uk-dropdown uk-dropdown-navbar">
                             <ul class="uk-nav uk-nav-navbar">
                                 <li><a href="/signout"><i class="uk-icon-sign-out"></i> LogOut</a></li>
@@ -62,8 +79,8 @@
                     <a target="_blank" href="#" class="uk-icon-button uk-icon-linkedin-square"></a>
                     <a target="_blank" href="#" class="uk-icon-button uk-icon-twitter"></a>
                 </p>
-                <p>Powered by <a href="#">Awesome Python Webapp</a>. Copyright &copy; 2014. [<a href="/manage/" target="_blank">Manage</a>]</p>
-                <p><a href="http://www.liaoxuefeng.com/" target="_blank">www.liaoxuefeng.com</a>. All rights reserved.</p>
+                <p>Powered by <a href="#">Python Webapp</a>. Copyright &copy; 2014. [<a href="/manage/blogs" target="_blank">Manage</a>]</p>
+                <p><a href="http://www.baidu.com/" target="_blank">www.baidu.com</a>. All rights reserved.</p>
                 <a target="_blank" href="#"><i class="uk-icon-html5" style="font-size:64px; color: #444;"></i></a>
             </div>
         </div>
