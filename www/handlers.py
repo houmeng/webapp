@@ -14,6 +14,8 @@ from config import configs
 from aiohttp import web
 from apis import APIValueError, APIResourceNotFoundError, Page
 import markdown2
+from markdown2 import Markdown
+import markdown
 
 def check_admin(request):
     if request.__user__ is None or not request.__user__.admin:
@@ -50,13 +52,29 @@ def index(*, page="1"):
         "page": page
     }
 
+class MarkdownEx(Markdown):
+    def preprocess(self, text):
+        print('in preprocess.')
+#        print(text.encode('ascii'))
+#        if text.encode('ascii').find(b'\n') >= 0:
+ #           print('find.')
+        if text.find('\n') >= 0:
+            text = text.replace('\n', '<br>')
+        return text
+
+    def postprocess(self, text):
+        print('in postprocess')
+        return text
+
+
 @get("/blog/{id}")
 def get_blog(id):
     blog = yield from Blog.find(id)
     comments = yield from Comment.findall("blog_id=?", [id], orderBy="created_at desc")
     for c in comments:
         c.html_content = text2html(c.content)
-    blog.html_content = markdown2.markdown(blog.content)
+    blog.html_content = markdown.markdown(blog.content)
+#    blog.html_content = MarkdownEx().convert(blog.content)
     return {
         "__template__": "blog.html",
         "blog": blog,
