@@ -36,6 +36,16 @@ def get_page_index(page_str):
         p = 1
     return p
 
+def get_cur_dir():
+    print("file: %s" % __file__)
+    print("realpath: %s" % os.path.realpath(__file__))
+    return os.path.split(os.path.realpath(__file__))[0]
+    path = sys.path[0]
+    if os.path.isdir(path):
+        return path
+    elif os.path.isfile(path):
+        return os.path.dirname(path)
+
 @get("/")
 def index(*, page="1"):
     page_index = get_page_index(page)
@@ -103,6 +113,48 @@ def get_users(request, *, page='1'):
         '__template__' : 'manage_users.html',
         "page_index": get_page_index(page)
     }
+
+@get("/manage/users/edit")
+def manage_edit_user(request, *, id):
+    user = yield from User.find(id)
+    if user is None:
+        raise APIResourceNotFoundError("user was not found.")
+
+    return {
+        "__template__": "manage_user_edit.html",
+        "id" : id,
+        "action": "/manage/users/" + id + "/edit"
+    }
+
+@post("/manage/users/{id}/edit")
+def manage_update_user(request, *, id, upfile):
+    check_admin(request)
+    print("filename:%s" % upfile.filename)
+    f = upfile.file
+    save_name = next_id() + os.path.splitext(upfile.filename)[1]
+    url = '/static/umeditor/images/' + save_name
+    store_path = os.path.join(get_cur_dir(), 'static\\umeditor\\images\\' + save_name)
+    print("cur dir:%s, store path:%s" % (get_cur_dir(), store_path))
+    if f:
+        image = open(store_path, "w+b")
+        image.write(f.read())
+        image.close()
+
+    user = yield from User.find(id)
+    if len(user) == 0:
+        raise APIResourceNotFoundError("user was not found.")
+    user.image = url
+    yield from user.update()
+
+    blogs = yield from Blog.findall("user_id=?", id)
+    for blog in blogs:
+        blog.user_image = user.image
+        yield from blog.update()
+    comments = yield from Comment.findall("user_id=?", id)
+    for comment in comments:
+        comment.user_image = user.image
+        yield from comment.update()
+    return None
 
 _RE_EMAIL = re.compile(r"^[a-z0-9\.\-\_]+\@[a-z0-9\-\_]+(\.[a-z0-9\-\_]+){1,4}$")
 _RE_SHA1 = re.compile(r"^[0-9a-f]{40}$")
@@ -267,16 +319,6 @@ def manage_update_blog(request, *, id, name, summary, content):
     blog.content = content
     yield from blog.update()
     return blog
-
-def get_cur_dir():
-    print("file: %s" % __file__)
-    print("realpath: %s" % os.path.realpath(__file__))
-    return os.path.split(os.path.realpath(__file__))[0]
-    path = sys.path[0]
-    if os.path.isdir(path):
-        return path
-    elif os.path.isfile(path):
-        return os.path.dirname(path)
 
 @post("/api/image/upload")
 def image_upload(request, *, upfile):
