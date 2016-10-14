@@ -4,6 +4,15 @@
 
 {% block beforehead %}
 
+<script type="text/javascript">
+	$(function(){
+		window.um = UM.getEditor('container', {
+			/* 传入配置参数,可配参数列表看umeditor.config.js */
+			//toolbar: ['undo redo | bold italic underline']
+		});
+	});
+</script>
+
 <script>
 var
     ID = '{{ id }}',
@@ -15,6 +24,7 @@ function initVM(blog) {
         methods: {
             submit: function (event) {
                 event.preventDefault();
+                this.content = um.getContent();
                 var $form = $('#vm').find('form');
                 $form.postJSON(action, this.$data, function (err, r) {
                     if (err) {
@@ -27,6 +37,9 @@ function initVM(blog) {
             }
         }
     });
+    um.setContent(blog.content);
+    $('#vm').find('form').width();
+    um.setWidth(800);
     $('#vm').show();
 }
 $(function () {
@@ -49,6 +62,17 @@ $(function () {
     }
 });
 </script>
+
+        <link rel="stylesheet" href="/static/umeditor/themes/default/_css/umeditor.css">
+	<!-- 引用jquery -->
+	<script type="text/javascript" src="/static/umeditor/third-party/jquery.min.js"></script>
+	<!-- 配置文件 -->
+	<script type="text/javascript" src="/static/umeditor/umeditor.config.js"></script>
+	<!-- 编辑器源码文件 -->
+	<script type="text/javascript" src="/static/umeditor/umeditor.js"></script>
+	<!-- 语言包文件 -->
+	<script type="text/javascript" src="/static/umeditor/lang/zh-cn/zh-cn.js"></script>
+	<!-- 实例化编辑器代码 -->
 
 {% endblock %}
 
@@ -86,12 +110,15 @@ $(function () {
                     <textarea v-model="summary" rows="4" name="summary" placeholder="摘要" class="uk-width-1-1" style="resize:none;"></textarea>
                 </div>
             </div>
-            <div class="uk-form-row">
-                <label class="uk-form-label">内容:</label>
-                <div class="uk-form-controls">
-                    <textarea v-model="content" rows="16" name="content" placeholder="内容" class="uk-width-1-1" style="resize:none;"></textarea>
+	    <div class="uk-form-row">
+	        <label class="uk-form-label">内容:</label>
+		<div class="uk-form-controls">
+		  <!-- 加载编辑器的容器 -->
+		  <script id="container" v-model="content" rows="16" name="content" type="text/plain" class="uk-width-1-1" style="resize:none">
+		  </script>
                 </div>
-            </div>
+	     </div>
+
             <div class="uk-form-row">
                 <button type="submit" class="uk-button uk-button-primary"><i class="uk-icon-save"></i> 保存</button>
                 <a href="/manage/blogs" class="uk-button"><i class="uk-icon-times"></i> 取消</a>

@@ -16,6 +16,7 @@ from apis import APIValueError, APIResourceNotFoundError, Page
 import markdown2
 from markdown2 import Markdown
 import markdown
+import os, sys
 
 def check_admin(request):
     if request.__user__ is None or not request.__user__.admin:
@@ -72,8 +73,8 @@ def get_blog(id):
     blog = yield from Blog.find(id)
     comments = yield from Comment.findall("blog_id=?", [id], orderBy="created_at desc")
     for c in comments:
-        c.html_content = text2html(c.content)
-    blog.html_content = markdown.markdown(blog.content)
+        c.html_content = c.content#text2html(c.content)
+    blog.html_content = blog.content#markdown.markdown(blog.content)
 #    blog.html_content = MarkdownEx().convert(blog.content)
     return {
         "__template__": "blog.html",
@@ -81,12 +82,27 @@ def get_blog(id):
         "comments": comments
     }
 
-@get("/api/users0")
-def api_get_users():
-    users = yield from User.findall(orderBy="created_at desc")
+@get("/api/users")
+def api_get_users(request, *, page='1'):
+    check_admin(request)
+    page_index = get_page_index(page)
+    num = yield from User.findNumber("count(id)")
+    p = Page(num, page_index)
+    if num == 0:
+        return dict(page=p, users=())
+
+    users = yield from User.findall(orderBy="created_at desc", limit=(p.offset, p.limit))
     for u in users:
         u.passwd = "******"
-    return dict(users=users)
+    return dict(page=p, users=users)
+
+@get("/manage/users")
+def get_users(request, *, page='1'):
+    check_admin(request)
+    return {
+        '__template__' : 'manage_users.html',
+        "page_index": get_page_index(page)
+    }
 
 _RE_EMAIL = re.compile(r"^[a-z0-9\.\-\_]+\@[a-z0-9\-\_]+(\.[a-z0-9\-\_]+){1,4}$")
 _RE_SHA1 = re.compile(r"^[0-9a-f]{40}$")
@@ -122,8 +138,8 @@ def api_get_blog(*, id):
 
     comments = yield from Comment.findall("blog_id=?", [id], orderBy="created_at desc")
     for c in comments:
-        c.html_content = text2html(c.content)
-    blog.html_content = markdown2.markdown(blog.content)
+        c.html_content = c.content#text2html(c.content)
+    blog.html_content = blog.content#markdown2.markdown(blog.content)
     return {
         "__template__": "blog.html",
         "blog": blog,
@@ -230,7 +246,55 @@ def manage_edit_blog(request, *, id):
     return {
         "__template__": "manage_blog_edit.html",
         "id" : id,
-        "action": "/api/blogs"
+        "action": "/manage/blogs/" + id + "/edit"
+    }
+
+@post("/manage/blogs/{id}/edit")
+def manage_update_blog(request, *, id, name, summary, content):
+    check_admin(request)
+    if not name or not name.strip():
+        raise APIValueError("name", "name cannot be empty.")
+    if not summary or not summary.strip():
+        raise APIValueError("summary", "summary cannot be empty.")
+    if not content or not content.strip():
+        raise APIValueError("cotent", "content cannot be empty.")
+
+    blog = yield from Blog.find(id)
+    if len(blog) == 0:
+        blog = Blog(user_id=request.__user__.id, user_name=request.__user__.name, user_image=request.__user__.image, name=name.strip(), summary=summary.strip(), content=content.strip())
+    blog.name = name
+    blog.summary = summary
+    blog.content = content
+    yield from blog.update()
+    return blog
+
+def get_cur_dir():
+    print("file: %s" % __file__)
+    print("realpath: %s" % os.path.realpath(__file__))
+    return os.path.split(os.path.realpath(__file__))[0]
+    path = sys.path[0]
+    if os.path.isdir(path):
+        return path
+    elif os.path.isfile(path):
+        return os.path.dirname(path)
+
+@post("/api/image/upload")
+def image_upload(request, *, upfile):
+    check_admin(request)
+    print("filename:%s" % upfile.filename)
+    f = upfile.file
+    save_name = next_id() + os.path.splitext(upfile.filename)[1]
+    url = save_name
+    store_path = os.path.join(get_cur_dir(), 'static\\umeditor\\images\\' + save_name)
+    print("cur dir:%s, store path:%s" % (get_cur_dir(), store_path))
+    if f:
+        image = open(store_path, "w+b")
+        image.write(f.read())
+        image.close()
+        
+    return {
+        'state' : 'SUCCESS',
+        'url' : url
     }
 
 @post("/api/authenticate")

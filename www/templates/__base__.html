@@ -30,6 +30,18 @@
   <script src="/static/js/sticky.min.js"></script>
   <script src="/static/js/vue.min.js"></script>
   <script src="/static/js/app.js"></script>
+
+<!-- Codemirror and marked dependencies -->
+        <link rel="stylesheet" href="/static/codemirror/lib/codemirror.css">
+        <script src="/static/codemirror/lib/codemirror.js"></script>
+        <script src="/static/codemirror/mode/markdown/markdown.js"></script>
+        <script src="/static/codemirror/addon/mode/overlay.js"></script>
+        <script src="/static/codemirror/mode/xml/xml.js"></script>
+        <script src="/static/codemirror/mode/gfm/gfm.js"></script>
+        <script src="/static/marked/marked.js"></script>
+
+  <link rel="stylesheet" href="/static/css/components/htmleditor.css">
+  <script src="/static/js/components/htmleditor.js"></script>
   {% block beforehead %}<!-- before head -->{% endblock %}
 </head>
 <body>
@@ -39,7 +51,9 @@
             <ul class="uk-navbar-nav">
                 <li data-url="blogs"><a href="/"><i class="uk-icon-home"></i> Blog</a></li>
                 <li><a target="_blank" href="#"><i class="uk-icon-book"></i> Learn</a></li>
-                <li><a target="_blank" href="#"><i class="uk-icon-code"></i> Source</a></li>
+		{% if __user__.admin %}
+                <li><a target="_blank" href="/manage/blogs"><i class="uk-icon-code"></i> 管理</a></li>
+		{% endif %}
             </ul>
             <div class="uk-navbar-flip">
                 <ul class="uk-navbar-nav">
@@ -79,9 +93,8 @@
                     <a target="_blank" href="#" class="uk-icon-button uk-icon-linkedin-square"></a>
                     <a target="_blank" href="#" class="uk-icon-button uk-icon-twitter"></a>
                 </p>
-                <p>Powered by <a href="#">Python Webapp</a>. Copyright &copy; 2014. [<a href="/manage/blogs" target="_blank">Manage</a>]</p>
+                <p>Powered by <a href="#">Python Webapp</a>. Copyright &copy; 2016. </p>
                 <p><a href="http://www.baidu.com/" target="_blank">www.baidu.com</a>. All rights reserved.</p>
-                <a target="_blank" href="#"><i class="uk-icon-html5" style="font-size:64px; color: #444;"></i></a>
             </div>
         </div>
     </div>

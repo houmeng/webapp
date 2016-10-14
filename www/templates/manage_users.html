@@ -1,0 +1,101 @@
+{% extends '__base__.html' %}
+
+{% block title %}用户{% endblock %}
+
+{% block beforehead %}
+
+<script>
+function initVM(data) {
+    var vm = new Vue({
+        el: '#vm',
+        data: {
+            users: data.users,
+            page: data.page
+        },
+        methods: {
+            edit_user: function (user) {
+                location.assign('/manage/users/edit?id=' + user.id);
+            },
+            delete_user: function (user) {
+                if (confirm('确认要删除“' + user.name + '”？删除后不可恢复！')) {
+                    postJSON('/api/users/' + user.id + '/delete', function (err, r) {
+                        if (err) {
+                            return alert(err.message || err.error || err);
+                        }
+                        refresh();
+                    });
+                }
+            }
+        }
+    });
+    var i = 0;
+    for (i = 0; i < data.users.length; i++) {
+        $('img')[i].src = data.users[i].image;
+    }
+    $('#vm').show();
+}
+$(function() {
+    getJSON('/api/users', {
+        page: {{ page_index }}
+    }, function (err, results) {
+        if (err) {
+            return fatal(err);
+        }
+        $('#loading').hide();
+        initVM(results);
+    });
+});
+</script>
+
+{% endblock %}
+
+{% block content %}
+
+    <div class="uk-width-1-1 uk-margin-bottom">
+        <div class="uk-panel uk-panel-box">
+            <ul class="uk-breadcrumb">
+                <li><a href="/manage/comments">评论</a></li>
+                <li><a href="/manage/users">日志</a></li>
+                <li class="uk-active"><span>用户</span></li>
+            </ul>
+        </div>
+    </div>
+
+    <div id="error" class="uk-width-1-1">
+    </div>
+
+    <div id="loading" class="uk-width-1-1 uk-text-center">
+        <span><i class="uk-icon-spinner uk-icon-medium uk-icon-spin"></i> 正在加载...</span>
+    </div>
+
+    <div id="vm" class="uk-width-1-1">
+
+        <table class="uk-table uk-table-hover">
+            <thead>
+                <tr>
+                    <th class="uk-width-5-10">标题 / 摘要</th>
+                    <th class="uk-width-2-10">作者</th>
+                    <th class="uk-width-2-10">创建时间</th>
+                    <th class="uk-width-1-10">操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-repeat="user: users" >
+                    <td>
+		        <img width="50" height="50" src="user.image">
+                    </td>
+                    <td>
+                        <a target="_blank" v-attr="href: '/user/'+user.id" v-text="user.name"></a>
+                    </td>
+                    <td>
+                        <a href="#0" v-on="click: edit_user(user)"><i class="uk-icon-edit"></i>
+                        <a href="#0" v-on="click: delete_user(user)"><i class="uk-icon-trash-o"></i>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div v-component="pagination" v-with="page"></div>
+    </div>
+
+{% endblock %}
